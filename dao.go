@@ -8,7 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var errDocNotExists = errors.New("doc doesn't exist")
+var errKeyNotExists = errors.New("key doesn't exist")
 
 func (cli *client) RPush(key string, val interface{}) error {
 	return cli.withContext(func(ctx context.Context) error {
@@ -20,7 +20,7 @@ func (cli *client) LPop(key string, val interface{}) error {
 	return cli.withContext(func(ctx context.Context) error {
 		err := cli.redisCli.LPop(ctx, key).Scan(val)
 		if err == redis.Nil {
-			return errDocNotExists
+			return errKeyNotExists
 		}
 
 		return err
@@ -43,7 +43,7 @@ func (cli *client) Get(key string, data interface{}) error {
 	return cli.withContext(func(ctx context.Context) error {
 		err := cli.redisCli.Get(ctx, key).Scan(data)
 		if err == redis.Nil {
-			return errDocNotExists
+			return errKeyNotExists
 		}
 
 		return err
@@ -78,6 +78,6 @@ func (cli *client) HasKey(key string) (bool, error) {
 	return exists, err
 }
 
-func (impl *client) IsDocNotExists(err error) bool {
-	return errors.Is(err, errDocNotExists)
+func (impl *client) IsKeyNotExists(err error) bool {
+	return errors.Is(err, errKeyNotExists)
 }
