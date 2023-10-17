@@ -2,6 +2,10 @@ package redisdb
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -12,11 +16,41 @@ var cli *client
 func Init(cfg *Config) error {
 	timeout := cfg.timeout()
 
-	v := redis.NewClient(&redis.Options{
-		DB:       cfg.DB,
-		Addr:     cfg.Address,
-		Password: cfg.Password,
-	})
+	v := &redis.Client{}
+
+	if cfg.DBCert != "" {
+		ca, err := ioutil.ReadFile(cfg.DBCert)
+		if err != nil {
+			return err
+		}
+
+		if err := os.Remove(cfg.DBCert); err != nil {
+			return err
+		}
+
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM(ca); !ok {
+			return err
+		}
+
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: true,
+			RootCAs:            pool,
+		}
+
+		v = redis.NewClient(&redis.Options{
+			DB:        cfg.DB,
+			Addr:      cfg.Address,
+			Password:  cfg.Password,
+			TLSConfig: tlsConfig,
+		})
+	} else {
+		v = redis.NewClient(&redis.Options{
+			DB:       cfg.DB,
+			Addr:     cfg.Address,
+			Password: cfg.Password,
+		})
+	}
 
 	err := withContext(
 		func(ctx context.Context) error {
