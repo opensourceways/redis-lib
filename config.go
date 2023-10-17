@@ -7,6 +7,7 @@ type Config struct {
 	Password string `json:"password" required:"true"`
 	DB       int    `json:"db"`
 	Timeout  int64  `json:"timeout"`
+	DBCert   string `json:"db_cert"`
 }
 
 func (cfg *Config) SetDefault() {
