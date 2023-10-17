@@ -13,7 +13,7 @@ import (
 
 var cli *client
 
-func Init(cfg *Config) error {
+func Init(cfg *Config, removeCert bool) error {
 	timeout := cfg.timeout()
 
 	v := &redis.Client{}
@@ -24,8 +24,10 @@ func Init(cfg *Config) error {
 			return err
 		}
 
-		if err := os.Remove(cfg.DBCert); err != nil {
-			return err
+		if removeCert {
+			if err := os.Remove(cfg.DBCert); err != nil {
+				return err
+			}
 		}
 
 		pool := x509.NewCertPool()
