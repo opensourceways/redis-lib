@@ -78,6 +78,6 @@ func (cli *client) HasKey(key string) (bool, error) {
 	return exists, err
 }
 
-func (impl *client) IsKeyNotExists(err error) bool {
+func (cli *client) IsKeyNotExists(err error) bool {
 	return errors.Is(err, errKeyNotExists)
 }
