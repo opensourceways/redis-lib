@@ -87,6 +87,10 @@ func DAO() *client {
 	return cli
 }
 
+func (cli *client) Redis() *redis.Client {
+	return cli.redisCli
+}
+
 func withContext(f func(context.Context) error, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
