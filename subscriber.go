@@ -27,6 +27,7 @@ type serviceImpl struct {
 	subscribers []*subscriber
 
 	db       int
+	once     sync.Once
 	redisCli *redis.Client
 }
 
@@ -38,18 +39,29 @@ func (impl *serviceImpl) unsubscribe() {
 }
 
 func (impl *serviceImpl) subscribe(handler Handler) error {
+	if err := impl.init(); err != nil {
+		return err
+	}
+
 	s := subscriber{
 		db:       impl.db,
 		redisCli: impl.redisCli,
 		done:     make(chan struct{}),
 	}
+	s.start(handler)
+	impl.subscribers = append(impl.subscribers, &s)
 
-	err := s.start(handler)
-	if err == nil {
-		impl.subscribers = append(impl.subscribers, &s)
-	}
+	return nil
+}
 
-	return err
+func (impl *serviceImpl) init() (err error) {
+	impl.once.Do(func() {
+		ctx := context.Background()
+
+		_, err = impl.redisCli.ConfigSet(ctx, "notify-keyspace-events", "Ex").Result()
+	})
+
+	return
 }
 
 // subscriber
@@ -71,14 +83,8 @@ func (s *subscriber) exit() {
 	})
 }
 
-func (s *subscriber) start(handler Handler) error {
+func (s *subscriber) start(handler Handler) {
 	ctx := context.Background()
-
-	_, err := s.redisCli.ConfigSet(ctx, "notify-keyspace-events", "Ex").Result()
-	if err != nil {
-		return err
-	}
-
 	ctx, s.cancel = context.WithCancel(ctx)
 
 	go func(ctx context.Context) {
@@ -90,7 +96,7 @@ func (s *subscriber) start(handler Handler) error {
 		for {
 			select {
 			case msg := <-pubsub.Channel():
-				if err = handler(msg.Payload); err != nil {
+				if err := handler(msg.Payload); err != nil {
 					logrus.Errorf("handle err: %s", err.Error())
 				}
 
@@ -101,6 +107,4 @@ func (s *subscriber) start(handler Handler) error {
 			}
 		}
 	}(ctx)
-
-	return nil
 }

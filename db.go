@@ -80,11 +80,19 @@ func Init(cfg *Config, removeCert bool) error {
 }
 
 func Close() error {
-	if cli != nil {
-		return cli.redisCli.Close()
+	if subscribeService != nil {
+		subscribeService.unsubscribe()
+		subscribeService = nil
 	}
 
-	return nil
+	if cli == nil {
+		return nil
+	}
+
+	err := cli.redisCli.Close()
+	cli = nil
+
+	return err
 }
 
 func DAO() *client {
