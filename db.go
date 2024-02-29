@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -20,7 +19,7 @@ func Init(cfg *Config, removeCert bool) error {
 	v := &redis.Client{}
 
 	if cfg.DBCert != "" {
-		ca, err := ioutil.ReadFile(cfg.DBCert)
+		ca, err := os.ReadFile(cfg.DBCert)
 		if err != nil {
 			return err
 		}
@@ -70,6 +69,11 @@ func Init(cfg *Config, removeCert bool) error {
 	cli = &client{
 		redisCli: v,
 		timeout:  timeout,
+	}
+
+	subscribeService = &serviceImpl{
+		redisCli: v,
+		db:       cfg.DB,
 	}
 
 	return nil
