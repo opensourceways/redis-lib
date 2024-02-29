@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -20,7 +19,7 @@ func Init(cfg *Config, removeCert bool) error {
 	v := &redis.Client{}
 
 	if cfg.DBCert != "" {
-		ca, err := ioutil.ReadFile(cfg.DBCert)
+		ca, err := os.ReadFile(cfg.DBCert)
 		if err != nil {
 			return err
 		}
@@ -72,15 +71,28 @@ func Init(cfg *Config, removeCert bool) error {
 		timeout:  timeout,
 	}
 
+	subscribeService = &serviceImpl{
+		redisCli: v,
+		db:       cfg.DB,
+	}
+
 	return nil
 }
 
 func Close() error {
-	if cli != nil {
-		return cli.redisCli.Close()
+	if subscribeService != nil {
+		subscribeService.unsubscribe()
+		subscribeService = nil
 	}
 
-	return nil
+	if cli == nil {
+		return nil
+	}
+
+	err := cli.redisCli.Close()
+	cli = nil
+
+	return err
 }
 
 func DAO() *client {
