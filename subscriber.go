@@ -56,9 +56,9 @@ func (impl *serviceImpl) subscribe(handler Handler) error {
 
 func (impl *serviceImpl) init() (err error) {
 	impl.once.Do(func() {
-		ctx := context.Background()
-
-		_, err = impl.redisCli.ConfigSet(ctx, "notify-keyspace-events", "Ex").Result()
+		_, err = impl.redisCli.ConfigSet(
+			context.Background(), "notify-keyspace-events", "Ex",
+		).Result()
 	})
 
 	return
